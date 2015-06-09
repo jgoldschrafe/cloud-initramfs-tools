@@ -1,0 +1,107 @@
+On a Eucalyptus kvm instance, I did the following to demonstrate function.
+
+- launch instance
+- show original partition table:
+  $ sudo sfdisk -G /dev/sda
+  /dev/sda: 164288 cylinders, 4 heads, 32 sectors/track
+  $ CHS=$(sudo sfdisk -G /dev/sda | awk '{print "-C",$2,"-H",$4,"-S",$6}')
+  $ sudo sfdisk -uS ${CHS} /dev/sda -d
+  # partition table of /dev/sda
+  unit: sectors
+
+  /dev/sda1 : start=       63, size=  2883585, Id=83
+  /dev/sda2 : start=  2883648, size= 16558001, Id=83
+  /dev/sda3 : start= 19441649, size=  1587215, Id=82
+  /dev/sda4 : start=        0, size=        0, Id= 0
+  $ df -h /dev/sda1 /dev/sda2
+  Filesystem            Size  Used Avail Use% Mounted on
+  /dev/sda1             1.4G  581M  735M  45% /
+  /dev/sda2             7.8G   52K  7.4G   1% /mnt
+
+- now, modify the partition table
+  This will destroy the filesystem on /dev/sda2 as we move it.  A
+  reboot will get the new partition and not see a filesystem on /dev/sda2
+
+  $ cat > rewrite.txt <<EOF
+  # partition table of /dev/sda
+  unit: sectors
+
+  /dev/sda1 : start=       63, size=  2883585, Id=83
+  /dev/sda2 : start= 10000000, size=  9441649, Id=83
+  /dev/sda3 : start= 19441649, size=  1587215, Id=82
+  /dev/sda4 : start=        0, size=        0, Id= 0
+  $ sudo sfdisk --force -uS ${CHS} /dev/sda < rewrite.txt
+
+- At this point, the disk is in a state where the root partition
+  could be grown.  You can see that with:
+  $ sudo growpart --dry-run /dev/sda 1
+  CHANGE: partition=1 start=63 old: size=2883585 end=2883648 new: size=9999937,end=10000000
+  # === old sfdisk -d ===
+  # partition table of /dev/sda
+  unit: sectors
+
+  /dev/sda1 : start=       63, size=  2883585, Id=83
+  /dev/sda2 : start= 10000000, size=  9441649, Id=83
+  /dev/sda3 : start= 19441649, size=  1587215, Id=82
+  /dev/sda4 : start=        0, size=        0, Id= 0
+  # === new sfdisk -d ===
+  # partition table of /dev/sda
+  unit: sectors
+
+  /dev/sda1 : start=       63, size=  9999937, Id=83
+  /dev/sda2 : start= 10000000, size=  9441649, Id=83
+  /dev/sda3 : start= 19441649, size=  1587215, Id=82
+  /dev/sda4 : start=        0, size=        0, Id= 0
+
+- To verify that the rewrite is safe for the following partition
+  we will put a filesystem into the newly sized /dev/sda2.
+
+  disable growroot for this reboot, and reboot the instance, so
+  that the kernel will have the new partition table, but growroot will
+  not resize.
+  $ sudo touch /etc/growroot-disabled
+  $ sudo reboot
+
+  After the reboot, the partition table with the gap will have been
+  read by the kernel and we can make a new filesystem on /dev/sda2 and
+  put some things in it.
+  $ sudo mkfs.ext3 /dev/sda2 -L HIMOM
+  $ sudo  mount /dev/sda2 /mnt 
+  $ sudo rsync -a /etc /mnt/
+
+  
+- Reboot the system, and the ramdisk should resize the root partition
+  However, in order to make filesystem know about its larger size, we
+  have to run resize2fs.  That can be done by cloud-init.  So that
+  cloud-init does that on first boot, remove the marker that it has
+  already done so.
+  $ sudo rm /etc/growroot-disabled
+  $ sudo rm /var/lib/cloud/instance/sem/config-resizefs 
+  $ sudo reboot
+
+- After reboot, the partition table should look like the 'new sfdisk -d'
+  partition table listed in the --dry-run output above.  Also, a 'df /'
+  should show that the / partition was grown (by cloud-init).
+
+  Console output will have a GROWROOT string in the output with information
+  about what was done:
+  $ euca-get-console-output i-46EE07DB > console.out
+  $ grep GROW  console.out
+  GROWROOT: CHANGED: partition=1 start=63 old: size=2883585 end=2883648 new: size=9999937,end=10000000
+
+  And, on the instance, you can see that the partition table has been
+  updated and that / partition has been resized by cloud-init.
+
+  $ sudo sfdisk -uS ${CHS} /dev/sda -d
+  # partition table of /dev/sda
+  unit: sectors
+
+  /dev/sda1 : start=       63, size=  9999937, Id=83
+  /dev/sda2 : start= 10000000, size=  9441649, Id=83
+  /dev/sda3 : start= 19441649, size=  1587215, Id=82
+  /dev/sda4 : start=        0, size=        0, Id= 0
+
+  $ df -h /dev/sda1 /dev/sda2
+  Filesystem            Size  Used Avail Use% Mounted on
+  /dev/sda1             4.7G  582M  3.9G  13% /
+  /dev/sda2             4.5G  143M  4.1G   4% /mnt

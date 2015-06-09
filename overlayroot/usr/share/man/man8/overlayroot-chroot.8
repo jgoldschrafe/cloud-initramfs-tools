@@ -1,0 +1,21 @@
+.TH overlayroot-chroot 8 "20 July 2012" overlayroot-chroot "initramfs-tools-overlayroot"
+.SH NAME
+\fBoverlayroot-chroot\fP - chroot into the lower filesystem in a writable mode
+
+.SH SYNOPSIS
+\fBoverlayroot-chroot\fP [COMMAND [ARG]...]
+
+.SH DESCRIPTION
+\fBoverlayroot-chroot\fP is a program that sets up bind mounts for \fI/proc\fP, \fI/run\fP, and \fI/sys\fP, remounts the lower directory in an overlayfs with write capabilities and will \fBchroot\fP(8) into it.  Upon exit, the bind mounts are unmounted.
+
+Any [COMMAND [ARG]...] are passed directly through to \fBchroot\fP(8).
+
+.SH SEE ALSO
+.TP
+\fBchroot\fP(8)
+.PD
+
+.SH AUTHOR
+This manpage and the utility were written by Dustin Kirkland <kirkland@ubuntu.com> for Ubuntu systems (but may be used by others).  Permission is granted to copy, distribute and/or modify this document and the utility under the terms of the GNU General Public License, Version 3 published by the Free Software Foundation.
+
+The complete text of the GNU General Public License can be found in \fI/usr/share/common-licenses/GPL\fP on Debian/Ubuntu systems, or on the web at \fIhttp://www.gnu.org/licenses/gpl.txt\fP.

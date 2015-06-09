@@ -1,0 +1,55 @@
+This source repository builds packages that work with initramfs-tools
+to add function to an initramfs that is likely cloud specific.
+
+Most likely, you do not want to install these packages unless you know
+what you're doing.
+
+== growroot ==
+This initramfs module will re-write the partition table of a disk
+so that the root partition has as much space as possible, bumping it
+up to the edge of the disk, or the edge of the next partition.
+
+This is valueable in an environment where a volume can be grown past
+its original size.  It addresses the following situation:
+ * The initial [virtual] disk has a partition table on it
+ * The provisioning system creates a volume with additional space
+   at the end of the disk (after the root partition)
+ * the system boots, but cannot use the additional space without a reboot
+   because the kernel will not re-read the partition table information
+   of a disk that is in use.
+
+The way this is addressed is:
+ * in the initramfs unmount the root filesystem
+ * rewrite the partition table
+ * tell the kernel to re-read
+ * remount the root filesystem
+
+== rescuevol ==
+When installed the initramfs will check to see if any partitions
+with a label of 'RESCUE_VOL' are attached.  If such a volume is attached,
+it will boot off that volume rather than the root volume.
+
+This is useful in a cloud environment, when the user is able to attach
+and detach volumes to a running system, but has no other mechanism
+for interupting of fixing a failed boot.  It is analogous to inserting
+a rescue CD into a system to recover from failure.
+
+It may be helpful in the case where the kernel and ramdisk can be loaded
+from the instance, but the system is unusable.  This could occur if
+an error left ssh access broken or the system didn't come all the way up.
+
+The user could attach a correctly labeled volume, reboot the instance
+and access the system to fix it.
+
+If the volume contains a file '/etc/rescuevol-ignore' it will be ignored.
+This allows you to fix your instance, create that volume and *not* boot the
+rescue volume on next boot
+
+== overlayroot ==
+Configure overlayfs filesystems over the root device based on
+configuration provided by kernel command line or in-image config.
+
+see overlayroot/etc/overlayroot.conf for more information.
+
+== dyn-netconf ==
+see dyn-netconf/doc/README.txt

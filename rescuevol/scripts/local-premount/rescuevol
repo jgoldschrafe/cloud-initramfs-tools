@@ -1,0 +1,84 @@
+#!/bin/sh
+
+RESCUE_LABEL="RESCUE_VOL"
+UMOUNT=""
+
+get_dev_by_label() {
+	local label=${1} dev=""
+	dev=$(blkid -c /dev/null -w /dev/null -l -o device \
+		-t "LABEL=${label}") || return 1
+	[ -n "${dev}" -a -e "${dev}" ] || return 1
+	_RET=${dev}
+}
+hasvol() {
+	local dev="" mp="" label=${1} myinit="${2}" 
+	get_dev_by_label "$label" || return 1
+	dev=${_RET}
+
+	mount -o ro "${dev}" "${MP}" && UMOUNT="${MP}" ||
+		{ echo "${dev} existed, but mount failed"; return 1; }
+
+	mp=${MP}
+	# the presense of file /etc/rescuevol-ignore in the target indicates
+	# that we should not use it.
+	[ -e "${mp}/etc/rescuevol-ignore" ] && {
+		echo "ignoring rescue volume labeled '${label}' due to /etc/rescuevol-ignore";
+		return 1;
+	}
+
+	# if /sbin/rescuevol-init exists, then use it rather than /sbin/init
+	[ -e "${mp}/sbin/rescuevol-init" ] && myinit="/sbin/rescuevol-init"
+
+	_RET_DEV=${dev}
+	_RET_INIT=${myinit}
+
+}
+mountfail() {
+	local vol="" label=${1}
+	get_dev_by_label "$label" && vol=${_RET}
+	if [ "${ROOT}" = "${vol}" ]; then
+		echo "**** Failed to mount rescue volume ${vol} ! *****"
+	else
+		cat <<EOF
+****    Boot from your root device '${ROOT}' failed!        *****
+**** You can potentially rescue this instance by attaching  *****
+**** A volume labeled '${label}' and rebooting.             *****
+**** If the initramfs sees such a volume, it will attempt   *****
+**** to boot off of it.                                     *****
+EOF
+	fi
+	rm "${0}"
+	exit 1
+}
+cleanup() {
+	[ -z "${UMOUNT}" ] || umount "${UMOUNT}"
+	[ -z "${MP}" -o ! -d "${MP}" ] || rmdir "${MP}"
+}
+
+PREREQS=""
+case $1 in
+    prereqs) echo "${PREREQS}"; exit 0;;
+esac
+
+. /scripts/functions
+
+# basic setup
+MP=/tmp/rescue_mp
+mkdir -p "${MP}"
+trap cleanup EXIT
+
+[ "$1" = "mountfail" ] && { mountfail "${RESCUE_LABEL}"; exit; }
+
+add_mountroot_fail_hook
+
+hasvol "${RESCUE_LABEL}" "${init:-/sbin/init}" || exit 0
+cat > /conf/param.conf <<EOF
+init=${_RET_INIT}
+ROOT=${_RET_DEV}
+EOF
+
+echo "====== Booting RESCUEVOL from ${_RET_DEV} init=${_RET_INIT} ======"
+
+exit 0
+
+# vi: ts=4 noexpandtab

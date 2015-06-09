@@ -1,0 +1,52 @@
+=== modified file 'debian/changelog'
+--- debian/changelog	2014-08-06 21:02:44 +0000
++++ debian/changelog	2015-01-16 16:28:41 +0000
+@@ -1,9 +1,11 @@
+-cloud-initramfs-tools (0.26ubuntu1) UNRELEASED; urgency=medium
++cloud-initramfs-tools (0.26ubuntu2) UNRELEASED; urgency=medium
+ 
+   * cloud-initramfs-dyn-netconf: support BOOTIF= that contains
+     upper case a-f.
++  * overlayroot: use required 'workdir' option on overlayfs mount for
++    kernels >= 3.18 (LP: #1411294)
+ 
+- -- Scott Moser <smoser@ubuntu.com>  Wed, 06 Aug 2014 16:58:36 -0400
++ -- Scott Moser <smoser@ubuntu.com>  Fri, 16 Jan 2015 11:28:35 -0500
+ 
+ cloud-initramfs-tools (0.25ubuntu1) trusty; urgency=medium
+ 
+
+=== modified file 'overlayroot/scripts/init-bottom/overlayroot'
+--- overlayroot/scripts/init-bottom/overlayroot	2013-08-19 17:27:26 +0000
++++ overlayroot/scripts/init-bottom/overlayroot	2015-01-16 16:26:11 +0000
+@@ -557,10 +557,19 @@
+ overlayroot_driver=${overlayroot_driver:-overlayfs}
+ 
+ # settings based on overlayroot_driver
++workdir=""
+ case "${overlayroot_driver}" in
+ 	overlayfs)
+ 		mount_type="overlayfs"
+ 		mount_opts="-o lowerdir=${root_ro},upperdir=${root_rw}/${dir_prefix}"
++		# 3.18+ require 'workdir=' option.
++		uname=$(uname -r)
++		case "$uname" in                                                
++			2*|3.1[01234567]*|3.[0-9].*) :;;                        
++			*)
++				workdir="${dir_prefix%/}-workdir"
++				mount_opts="${mount_opts},workdir=${root_rw}/${workdir}";;
++		esac
+ 		mount_opts="${mount_opts} overlayroot ${ROOTMNT}"
+ 		;;
+ 	aufs)
+@@ -599,6 +608,9 @@
+ mkdir -p "${root_rw}/${dir_prefix}" ||
+ 	fail "failed to create ${dir_prefix} on ${device}"
+ 
++[ -z "$workdir" ] || mkdir -p "$root_rw/${workdir}" ||
++	fail "failed to create workdir '$workdir' on ${device}"
++
+ # root is mounted on ${ROOTMNT}, move it to ${ROOT_RO}.
+ mount --move "${ROOTMNT}" "${root_ro}" ||
+ 	fail "failed to move root away from ${ROOTMNT} to ${root_ro}"
+

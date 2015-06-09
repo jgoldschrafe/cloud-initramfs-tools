@@ -1,0 +1,263 @@
+cloud-initramfs-tools (0.26ubuntu1) vivid; urgency=medium
+
+  * cloud-initramfs-dyn-netconf: support BOOTIF= that contains
+    upper case a-f.
+  * overlayroot: use required 'workdir' option on overlayfs mount for
+    kernels >= 3.18 (LP: #1411294)
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 16 Jan 2015 12:01:06 -0500
+
+cloud-initramfs-tools (0.25ubuntu1) trusty; urgency=medium
+
+  * cloud-initramfs-copymods: Add new package that is useful
+    if you're booting kernel/initramfs that live external to
+    the root filesystem.
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 25 Mar 2014 17:22:34 -0400
+
+cloud-initramfs-tools (0.24ubuntu1) trusty; urgency=medium
+
+  * overlayroot: package conf-hooks.d/overlayroot which was previously
+    not included in the package.
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 12 Feb 2014 13:31:57 -0500
+
+cloud-initramfs-tools (0.23ubuntu1) trusty; urgency=low
+
+   [ Dimitri John Ledkov ]
+   * modify overlayroot config to export CRYPTSETUP=yes so that
+     crypto modules are included by cryptsetup. (LP: #1267225)
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 05 Feb 2014 15:13:58 +0200
+
+cloud-initramfs-tools (0.22ubuntu1) trusty; urgency=medium
+
+  * correctly identify partition and block device for devices named
+    like devnameXpN, such as mmcblk0p1 (LP: #1236380).
+  * always include aesni_intel rather than doing it if there is
+    cpu support (LP: #1267225).
+
+ -- Scott Moser <smoser@ubuntu.com>  Mon, 03 Feb 2014 22:09:00 +0200
+
+cloud-initramfs-tools (0.21ubuntu2) trusty; urgency=low
+
+  * Fix Makefile to avoid FTBS caused by subdir in overlayroot/etc
+    Makefile now takes into account when subdirectories are present in
+    the overlayroot directory.
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Thu, 02 Jan 2014 03:26:22 +0000
+
+cloud-initramfs-tools (0.21ubuntu1) trusty; urgency=low
+
+  * === added directory overlayroot/etc/update-motd.d,
+    debian/overlayroot.install, overlayroot/etc/update-motd.d/97-
+    overlayroot:
+    - add an update-motd message, when booted in an overlayroot
+      environment
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 15 Nov 2013 12:05:58 -0600
+
+cloud-initramfs-tools (0.20ubuntu1) saucy; urgency=low
+
+  * debian/control: depend on cloud-utils or cloud-guest-utils.
+  * overlayroot: include a fix for creating /etc/init in overlay so
+    inotify works correctly.
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 27 Aug 2013 16:48:53 -0400
+
+cloud-initramfs-tools (0.19ubuntu1) raring; urgency=low
+
+  * cloud-initramfs-growroot: support growpart exit status of '1'
+    indicating "no-change-necessary"
+  * cloud-initramfs-dyn-netconf: run at init-premount rather than
+    init-top to ensure that 'load_modules' has been run and udev is
+    running (LP: #1116426)
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 05 Feb 2013 16:49:23 -0500
+
+cloud-initramfs-tools (0.18-ubuntu1) quantal; urgency=low
+
+  * add cloud-initramfs-dyn-netconf package.
+    * support replacing 'BOOTIF' in an 'ip' kernel cmdline parameter with
+      the actual interface name (ip=:::::BOOTIF => ip=::::eth0) (LP: #1046405)
+    * support writing network-interfaces style file for any devices configured
+      via 'ipconfig' in the kernel (LP: #1053190).
+
+ -- Scott Moser <smoser@ubuntu.com>  Mon, 01 Oct 2012 13:12:22 -0400
+
+cloud-initramfs-tools (0.17-0ubuntu1) quantal; urgency=low
+
+  * disable searching for config disk by default (LP: #1034116)
+  * make config disk device configurable
+  * support reading /etc/overlayroot.local.conf for local configuration
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 28 Aug 2012 22:08:27 -0400
+
+cloud-initramfs-tools (0.16-0ubuntu1) quantal; urgency=low
+
+  * overlayroot/scripts/init-bottom/overlayroot:
+    - lower missing rng seed to a debug
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 01 Aug 2012 11:36:25 -0500
+
+cloud-initramfs-tools (0.15-0ubuntu1) quantal; urgency=low
+
+  * overlayroot/etc/overlayroot.conf, overlayroot/scripts/init-
+    bottom/overlayroot:
+    - add a bit more unpredictability/entropy to our key generation
+    - use the stat output of all of /dev/* /proc/* /sys/*
+    - document that
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 31 Jul 2012 16:45:10 -0500
+
+cloud-initramfs-tools (0.14-0ubuntu1) quantal; urgency=low
+
+  [ Scott Moser ]
+  * overlayroot/etc/overlayroot.conf:
+    - fix name of password file
+  * overlayroot/hooks/overlayroot:
+    - mktemp is already in busybox
+
+  [ Dustin Kirkland ]
+  * debian/control:
+    - lower haveged to a suggests, until its MIR is approved
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 31 Jul 2012 11:00:15 -0500
+
+cloud-initramfs-tools (0.13-0ubuntu1) quantal; urgency=low
+
+  * overlayroot/scripts/init-bottom/overlayroot:
+    - stash generated password in tmpfs in /dev/.initramfs
+  * debian/control, overlayroot/etc/overlayroot.conf,
+    overlayroot/hooks/overlayroot, overlayroot/scripts/init-
+    bottom/overlayroot:
+    - drop pwgen dependency
+    - use a new algorithm for generating cryptsetup passphrase
+    - document that in the config file
+    - need a few new executables in ramfs (head, sha512sum, mktemp)
+    - write the randomly generated cryptsetup passphrase to a
+      root-only-readable file in tmpfs
+  * debian/control, overlayroot/hooks/overlayroot,
+    overlayroot/scripts/init-bottom/overlayroot:
+    - depend on haveged for additional entropy
+    - grab up to 4KB of entropy from /dev/random and stash it into
+      a seed in the initramfs
+    - load the initramfs seed and the urandom boot seed into urandom
+      (borrowed from the /etc/init.d/urandom script)
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 27 Jul 2012 14:57:42 -0500
+
+cloud-initramfs-tools (0.12-0ubuntu1) quantal; urgency=low
+
+  [ Scott Moser ]
+  * overlayroot:
+    * fix recursive mounts
+    * add debug= parameter
+    * make dir= a valid parameter for overlayroot=tmpfs
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 26 Jul 2012 17:09:20 -0500
+
+cloud-initramfs-tools (0.11-0ubuntu1) quantal; urgency=low
+
+  [ Scott Moser ]
+  * debian/cloud-initramfs-overlayroot.{install,postinst,postrm}:
+    rename so dh gets the right packaged files
+  * overlayroot/etc/overlayroot.conf,
+    overlayroot/scripts/init-bottom/overlayroot:
+    * add recursive readonly mounts.  Enable this by default.
+    * add parameter 'swap' to control if swap is to be enabled.
+      swap defaults to disabled.
+    * add support for identifying device by LABEL= or UUID=
+  * debian/control:
+    * remove overlayfs dependency on cloud-utils and util-linux
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 24 Jul 2012 20:05:33 -0500
+
+cloud-initramfs-tools (0.10-0ubuntu1) quantal; urgency=low
+
+  * debian/control:
+    - simplify the name of the binary package to just "overlayroot"
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Mon, 23 Jul 2012 09:38:44 -0500
+
+cloud-initramfs-tools (0.9-0ubuntu1) quantal; urgency=low
+
+  * debian/control:
+    - add a binary metapackage, overlayroot, which is a lot less
+      wordy than cloud-initramfs-overlayroot
+    - this functionality is not actually cloud-specific
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Sat, 21 Jul 2012 11:08:57 -0500
+
+cloud-initramfs-tools (0.8-0ubuntu1) quantal; urgency=low
+
+  * overlayroot/etc/overlayroot.conf, overlayroot/scripts/init-
+    bottom/overlayroot:
+    - default to ext4, much faster to format when doing this dynamically
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:57:21 -0500
+
+cloud-initramfs-tools (0.7-0ubuntu1) quantal; urgency=low
+
+  [ Scott Moser ]
+  * overlayroot/scripts/init-bottom/overlayroot:
+    - fix race condition, waiting for crypt filesystem to map
+    - use wait loop
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:47:48 -0500
+
+cloud-initramfs-tools (0.6-0ubuntu1) quantal; urgency=low
+
+  * debian/control, debian/README.source:
+    - update upstream location of project
+  * debian/copyright:
+    - update copyrights
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 17:00:19 -0500
+
+cloud-initramfs-tools (0.5ubuntu1) quantal; urgency=low
+
+  [ Dustin Kirkland ]
+  * Add support for an overlayroot binary package
+    - adds overlayfs support on top of a read only root
+      with an optional backing device that can optionally be encrypted
+    - include overlay-chroot utility with man page.
+
+  [ Scott Moser ]
+  * debian/control: set standards version to 3.9.3
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Fri, 20 Jul 2012 16:07:18 -0500
+
+cloud-initramfs-tools (0.4ubuntu1) precise; urgency=low
+
+  * growroot: run 'udevadm settle' before attempting growpart to
+    allow initial events to finish (LP: #937352)
+
+ -- Scott Moser <smoser@ubuntu.com>  Thu, 23 Feb 2012 22:19:20 -0500
+
+cloud-initramfs-tools (0.3ubuntu1) precise; urgency=low
+
+  * growroot: unmount root before attempting to grow the root
+    partition (LP: #906722).
+
+ -- Scott Moser <smoser@ubuntu.com>  Tue, 20 Dec 2011 13:24:45 -0500
+
+cloud-initramfs-tools (0.2ubuntu1) oneiric; urgency=low
+
+  * invoke blkid to search for the rescue volume rather than relying on 
+    /dev/disk/by-label/LABEL .  The by-label entries would sometimes
+    not exist while the device would.
+  * improve failed boot message
+  * update debian/README.source to point at upstream location
+
+  [Neil Wilson]
+  * fix race condition that resulted in intermittent mount failures 
+    after 'growroot'. (LP: #765843)
+
+ -- Scott Moser <smoser@ubuntu.com>  Wed, 08 Jun 2011 09:46:57 -0400
+
+cloud-initramfs-tools (0.1ubuntu1) natty; urgency=low
+
+  * Initial Release (LP: #725127).
+
+ -- Scott Moser <smoser@ubuntu.com>  Fri, 25 Feb 2011 12:44:03 -0500
